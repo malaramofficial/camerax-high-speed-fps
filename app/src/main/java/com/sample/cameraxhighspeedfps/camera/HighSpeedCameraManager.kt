@@ -68,7 +68,13 @@ class HighSpeedCameraManager(private val context: Context) {
                 .build()
             val vc = VideoCapture.withOutput(recorder)
 
+            // Query frame-rate support for the same use-case combination that
+            // we actually bind later: VideoCapture + Preview. Querying only
+            // VideoCapture can return a range that becomes invalid once the
+            // Preview surface is added, which can result in a black preview.
+            val preview = Preview.Builder().build()
             val builder = HighSpeedVideoSessionConfig.Builder(vc)
+                .setPreview(preview)
             val highSpeedSessionConfig = builder.build()
 
             val fpsRanges = cameraInfo.getSupportedFrameRateRanges(highSpeedSessionConfig)
