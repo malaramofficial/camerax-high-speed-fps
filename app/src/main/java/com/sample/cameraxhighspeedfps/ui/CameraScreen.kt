@@ -77,25 +77,35 @@ fun CameraScreen(viewModel: HighSpeedViewModel = viewModel()) {
         val isLandscape = rotation == Surface.ROTATION_90 || rotation == Surface.ROTATION_270
         val ratio = if (isLandscape) 16f / 9f else 9f / 16f
         
-        androidx.compose.runtime.key(selectedConfig, slowMotionEnabled) {
-            val previewView = remember { 
-                PreviewView(context).apply {
-                    scaleType = PreviewView.ScaleType.FIT_CENTER
-                }
+        // Keep one PreviewView instance for the whole screen. Recreating the
+        // PreviewView while CameraX is bound can leave the surface disconnected
+        // and produce a completely black preview.
+        val previewView = remember {
+            PreviewView(context).apply {
+                scaleType = PreviewView.ScaleType.FILL_CENTER
+                implementationMode = PreviewView.ImplementationMode.COMPATIBLE
             }
-            
-            LaunchedEffect(cameraProviderState.value) {
-                val provider = cameraProviderState.value
-                val config = selectedConfig
-                if (provider != null && config != null) {
-                    viewModel.bindCamera(provider, lifecycleOwner, previewView, config, slowMotionEnabled)
-                }
-            }
+        }
 
-            AndroidView(
-                factory = { previewView },
-                modifier = Modifier.aspectRatio(ratio)
-            )
+        AndroidView(
+            factory = { previewView },
+            modifier = Modifier
+                .fillMaxSize()
+                .aspectRatio(ratio, matchHeightConstraintsFirst = false)
+        )
+
+        LaunchedEffect(cameraProviderState.value, selectedConfig, slowMotionEnabled) {
+            val provider = cameraProviderState.value
+            val config = selectedConfig
+            if (provider != null && config != null) {
+                viewModel.bindCamera(
+                    provider,
+                    lifecycleOwner,
+                    previewView,
+                    config,
+                    slowMotionEnabled
+                )
+            }
         }
 
         // Top Right Selector
